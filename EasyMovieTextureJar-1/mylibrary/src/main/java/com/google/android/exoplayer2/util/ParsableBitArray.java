@@ -111,25 +111,13 @@ public final class ParsableBitArray {
   }
 
   /**
-   * Skips a single bit.
-   */
-  public void skipBit() {
-    if (++bitOffset == 8) {
-      bitOffset = 0;
-      byteOffset++;
-    }
-    assertValidOffset();
-  }
-
-  /**
    * Skips bits and moves current reading position forward.
    *
-   * @param numBits The number of bits to skip.
+   * @param n The number of bits to skip.
    */
-  public void skipBits(int numBits) {
-    int numBytes = numBits / 8;
-    byteOffset += numBytes;
-    bitOffset += numBits - (numBytes * 8);
+  public void skipBits(int n) {
+    byteOffset += (n / 8);
+    bitOffset += (n % 8);
     if (bitOffset > 7) {
       byteOffset++;
       bitOffset -= 8;
@@ -143,9 +131,7 @@ public final class ParsableBitArray {
    * @return Whether the bit is set.
    */
   public boolean readBit() {
-    boolean returnValue = (data[byteOffset] & (0x80 >> bitOffset)) != 0;
-    skipBit();
-    return returnValue;
+    return readBits(1) == 1;
   }
 
   /**
@@ -158,18 +144,45 @@ public final class ParsableBitArray {
     if (numBits == 0) {
       return 0;
     }
+
     int returnValue = 0;
-    bitOffset += numBits;
-    while (bitOffset > 8) {
-      bitOffset -= 8;
-      returnValue |= (data[byteOffset++] & 0xFF) << bitOffset;
-    }
-    returnValue |= (data[byteOffset] & 0xFF) >> 8 - bitOffset;
-    returnValue &= 0xFFFFFFFF >>> (32 - numBits);
-    if (bitOffset == 8) {
-      bitOffset = 0;
+
+    // Read as many whole bytes as we can.
+    int wholeBytes = (numBits / 8);
+    for (int i = 0; i < wholeBytes; i++) {
+      int byteValue;
+      if (bitOffset != 0) {
+        byteValue = ((data[byteOffset] & 0xFF) << bitOffset)
+            | ((data[byteOffset + 1] & 0xFF) >>> (8 - bitOffset));
+      } else {
+        byteValue = data[byteOffset];
+      }
+      numBits -= 8;
+      returnValue |= (byteValue & 0xFF) << numBits;
       byteOffset++;
     }
+
+    // Read any remaining bits.
+    if (numBits > 0) {
+      int nextBit = bitOffset + numBits;
+      byte writeMask = (byte) (0xFF >> (8 - numBits));
+
+      if (nextBit > 8) {
+        // Combine bits from current byte and next byte.
+        returnValue |= ((((data[byteOffset] & 0xFF) << (nextBit - 8)
+            | ((data[byteOffset + 1] & 0xFF) >> (16 - nextBit))) & writeMask));
+        byteOffset++;
+      } else {
+        // Bits to be read only within current byte.
+        returnValue |= (((data[byteOffset] & 0xFF) >> (8 - nextBit)) & writeMask);
+        if (nextBit == 8) {
+          byteOffset++;
+        }
+      }
+
+      bitOffset = nextBit % 8;
+    }
+
     assertValidOffset();
     return returnValue;
   }
@@ -218,6 +231,7 @@ public final class ParsableBitArray {
   private void assertValidOffset() {
     // It is fine for position to be at the end of the array, but no further.
     Assertions.checkState(byteOffset >= 0
+        && (bitOffset >= 0 && bitOffset < 8)
         && (byteOffset < byteLimit || (byteOffset == byteLimit && bitOffset == 0)));
   }
 

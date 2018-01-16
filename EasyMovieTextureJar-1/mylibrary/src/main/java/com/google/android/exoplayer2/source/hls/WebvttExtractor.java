@@ -141,7 +141,8 @@ import java.util.regex.Pattern;
           throw new ParserException("X-TIMESTAMP-MAP doesn't contain media timestamp: " + line);
         }
         vttTimestampUs = WebvttParserUtil.parseTimestampUs(localTimestampMatcher.group(1));
-        tsTimestampUs = TimestampAdjuster.ptsToUs(Long.parseLong(mediaTimestampMatcher.group(1)));
+        tsTimestampUs = TimestampAdjuster.ptsToUs(
+            Long.parseLong(mediaTimestampMatcher.group(1)));
       }
     }
 
@@ -154,8 +155,8 @@ import java.util.regex.Pattern;
     }
 
     long firstCueTimeUs = WebvttParserUtil.parseTimestampUs(cueHeaderMatcher.group(1));
-    long sampleTimeUs = timestampAdjuster.adjustTsTimestamp(
-        TimestampAdjuster.usToPts(firstCueTimeUs + tsTimestampUs - vttTimestampUs));
+    long sampleTimeUs = timestampAdjuster.adjustSampleTimestamp(
+        firstCueTimeUs + tsTimestampUs - vttTimestampUs);
     long subsampleOffsetUs = sampleTimeUs - firstCueTimeUs;
     // Output the track.
     TrackOutput trackOutput = buildTrackOutput(subsampleOffsetUs);

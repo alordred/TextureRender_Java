@@ -79,7 +79,7 @@ import java.util.Arrays;
   }
 
   @Override
-  public void prepare(Callback callback, long positionUs) {
+  public void prepare(Callback callback) {
     callback.onPrepared(this);
   }
 

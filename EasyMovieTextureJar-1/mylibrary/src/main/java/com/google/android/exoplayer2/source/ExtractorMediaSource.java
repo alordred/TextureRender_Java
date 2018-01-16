@@ -39,7 +39,7 @@ import java.io.IOException;
  * <p>
  * Note that the built-in extractors for AAC, MPEG PS/TS and FLV streams do not support seeking.
  */
-public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPeriod.Listener {
+public final class ExtractorMediaSource implements MediaSource, MediaSource.Listener {
 
   /**
    * Listener of {@link ExtractorMediaSource} events.
@@ -72,12 +72,6 @@ public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPe
    */
   public static final int MIN_RETRY_COUNT_DEFAULT_FOR_MEDIA = -1;
 
-  /**
-   * The default number of bytes that should be loaded between each each invocation of
-   * {@link MediaPeriod.Callback#onContinueLoadingRequested(SequenceableLoader)}.
-   */
-  public static final int DEFAULT_LOADING_CHECK_INTERVAL_BYTES = 1024 * 1024;
-
   private final Uri uri;
   private final DataSource.Factory dataSourceFactory;
   private final ExtractorsFactory extractorsFactory;
@@ -86,11 +80,10 @@ public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPe
   private final EventListener eventListener;
   private final Timeline.Period period;
   private final String customCacheKey;
-  private final int continueLoadingCheckIntervalBytes;
 
   private MediaSource.Listener sourceListener;
-  private long timelineDurationUs;
-  private boolean timelineIsSeekable;
+  private Timeline timeline;
+  private boolean timelineHasDuration;
 
   /**
    * @param uri The {@link Uri} of the media stream.
@@ -103,7 +96,8 @@ public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPe
    */
   public ExtractorMediaSource(Uri uri, DataSource.Factory dataSourceFactory,
       ExtractorsFactory extractorsFactory, Handler eventHandler, EventListener eventListener) {
-    this(uri, dataSourceFactory, extractorsFactory, eventHandler, eventListener, null);
+    this(uri, dataSourceFactory, extractorsFactory, MIN_RETRY_COUNT_DEFAULT_FOR_MEDIA, eventHandler,
+        eventListener, null);
   }
 
   /**
@@ -121,7 +115,7 @@ public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPe
       ExtractorsFactory extractorsFactory, Handler eventHandler, EventListener eventListener,
       String customCacheKey) {
     this(uri, dataSourceFactory, extractorsFactory, MIN_RETRY_COUNT_DEFAULT_FOR_MEDIA, eventHandler,
-        eventListener, customCacheKey, DEFAULT_LOADING_CHECK_INTERVAL_BYTES);
+        eventListener, customCacheKey);
   }
 
   /**
@@ -135,12 +129,10 @@ public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPe
    * @param eventListener A listener of events. May be null if delivery of events is not required.
    * @param customCacheKey A custom key that uniquely identifies the original stream. Used for cache
    *     indexing. May be null.
-   * @param continueLoadingCheckIntervalBytes The number of bytes that should be loaded between each
-   *     invocation of {@link MediaPeriod.Callback#onContinueLoadingRequested(SequenceableLoader)}.
    */
   public ExtractorMediaSource(Uri uri, DataSource.Factory dataSourceFactory,
       ExtractorsFactory extractorsFactory, int minLoadableRetryCount, Handler eventHandler,
-      EventListener eventListener, String customCacheKey, int continueLoadingCheckIntervalBytes) {
+      EventListener eventListener, String customCacheKey) {
     this.uri = uri;
     this.dataSourceFactory = dataSourceFactory;
     this.extractorsFactory = extractorsFactory;
@@ -148,14 +140,14 @@ public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPe
     this.eventHandler = eventHandler;
     this.eventListener = eventListener;
     this.customCacheKey = customCacheKey;
-    this.continueLoadingCheckIntervalBytes = continueLoadingCheckIntervalBytes;
     period = new Timeline.Period();
   }
 
   @Override
   public void prepareSource(ExoPlayer player, boolean isTopLevelSource, Listener listener) {
     sourceListener = listener;
-    notifySourceInfoRefreshed(C.TIME_UNSET, false);
+    timeline = new SinglePeriodTimeline(C.TIME_UNSET, false);
+    listener.onSourceInfoRefreshed(timeline, null);
   }
 
   @Override
@@ -164,11 +156,11 @@ public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPe
   }
 
   @Override
-  public MediaPeriod createPeriod(MediaPeriodId id, Allocator allocator) {
-    Assertions.checkArgument(id.periodIndex == 0);
+  public MediaPeriod createPeriod(int index, Allocator allocator, long positionUs) {
+    Assertions.checkArgument(index == 0);
     return new ExtractorMediaPeriod(uri, dataSourceFactory.createDataSource(),
         extractorsFactory.createExtractors(), minLoadableRetryCount, eventHandler, eventListener,
-        this, allocator, customCacheKey, continueLoadingCheckIntervalBytes);
+        this, allocator, customCacheKey);
   }
 
   @Override
@@ -181,27 +173,19 @@ public final class ExtractorMediaSource implements MediaSource, ExtractorMediaPe
     sourceListener = null;
   }
 
-  // ExtractorMediaPeriod.Listener implementation.
+  // MediaSource.Listener implementation.
 
   @Override
-  public void onSourceInfoRefreshed(long durationUs, boolean isSeekable) {
-    // If we already have the duration from a previous source info refresh, use it.
-    durationUs = durationUs == C.TIME_UNSET ? timelineDurationUs : durationUs;
-    if (timelineDurationUs == durationUs && timelineIsSeekable == isSeekable
-        || (timelineDurationUs != C.TIME_UNSET && durationUs == C.TIME_UNSET)) {
-      // Suppress no-op source info changes.
+  public void onSourceInfoRefreshed(Timeline newTimeline, Object manifest) {
+    long newTimelineDurationUs = newTimeline.getPeriod(0, period).getDurationUs();
+    boolean newTimelineHasDuration = newTimelineDurationUs != C.TIME_UNSET;
+    if (timelineHasDuration && !newTimelineHasDuration) {
+      // Suppress source info changes that would make the duration unknown when it is already known.
       return;
     }
-    notifySourceInfoRefreshed(durationUs, isSeekable);
-  }
-
-  // Internal methods.
-
-  private void notifySourceInfoRefreshed(long durationUs, boolean isSeekable) {
-    timelineDurationUs = durationUs;
-    timelineIsSeekable = isSeekable;
-    sourceListener.onSourceInfoRefreshed(
-        new SinglePeriodTimeline(timelineDurationUs, timelineIsSeekable), null);
+    timeline = newTimeline;
+    timelineHasDuration = newTimelineHasDuration;
+    sourceListener.onSourceInfoRefreshed(timeline, null);
   }
 
 }

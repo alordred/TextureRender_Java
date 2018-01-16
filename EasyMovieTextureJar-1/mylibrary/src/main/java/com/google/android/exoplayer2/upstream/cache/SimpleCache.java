@@ -48,7 +48,7 @@ public final class SimpleCache implements Cache {
    * @param evictor The evictor to be used.
    */
   public SimpleCache(File cacheDir, CacheEvictor evictor) {
-    this(cacheDir, evictor, null, false);
+    this(cacheDir, evictor, null);
   }
 
   /**
@@ -61,36 +61,10 @@ public final class SimpleCache implements Cache {
    *     The key must be 16 bytes long.
    */
   public SimpleCache(File cacheDir, CacheEvictor evictor, byte[] secretKey) {
-    this(cacheDir, evictor, secretKey, secretKey != null);
-  }
-
-  /**
-   * Constructs the cache. The cache will delete any unrecognized files from the directory. Hence
-   * the directory cannot be used to store other files.
-   *
-   * @param cacheDir A dedicated cache directory.
-   * @param evictor The evictor to be used.
-   * @param secretKey If not null, cache keys will be stored encrypted on filesystem using AES/CBC.
-   *     The key must be 16 bytes long.
-   * @param encrypt When false, a plaintext index will be written.
-   */
-  public SimpleCache(File cacheDir, CacheEvictor evictor, byte[] secretKey, boolean encrypt) {
-    this(cacheDir, evictor, new CachedContentIndex(cacheDir, secretKey, encrypt));
-  }
-
-  /**
-   * Constructs the cache. The cache will delete any unrecognized files from the directory. Hence
-   * the directory cannot be used to store other files.
-   *
-   * @param cacheDir A dedicated cache directory.
-   * @param evictor The evictor to be used.
-   * @param index The CachedContentIndex to be used.
-   */
-  /*package*/ SimpleCache(File cacheDir, CacheEvictor evictor, CachedContentIndex index) {
     this.cacheDir = cacheDir;
     this.evictor = evictor;
     this.lockedSpans = new HashMap<>();
-    this.index = index;
+    this.index = new CachedContentIndex(cacheDir, secretKey);
     this.listeners = new HashMap<>();
     // Start cache initialization.
     final ConditionVariable conditionVariable = new ConditionVariable();
@@ -136,8 +110,7 @@ public final class SimpleCache implements Cache {
   @Override
   public synchronized NavigableSet<CacheSpan> getCachedSpans(String key) {
     CachedContent cachedContent = index.get(key);
-    return cachedContent == null || cachedContent.isEmpty() ? null
-        : new TreeSet<CacheSpan>(cachedContent.getSpans());
+    return cachedContent == null ? null : new TreeSet<CacheSpan>(cachedContent.getSpans());
   }
 
   @Override
@@ -317,14 +290,11 @@ public final class SimpleCache implements Cache {
       return;
     }
     totalSpace -= span.length;
-    try {
-      if (removeEmptyCachedContent && cachedContent.isEmpty()) {
-        index.removeEmpty(cachedContent.key);
-        index.store();
-      }
-    } finally {
-      notifySpanRemoved(span);
+    if (removeEmptyCachedContent && cachedContent.isEmpty()) {
+      index.removeEmpty(cachedContent.key);
+      index.store();
     }
+    notifySpanRemoved(span);
   }
 
   @Override

@@ -56,10 +56,8 @@ public final class MediaCodecUtil {
   }
 
   private static final String TAG = "MediaCodecUtil";
-  private static final String GOOGLE_RAW_DECODER_NAME = "OMX.google.raw.decoder";
-  private static final String MTK_RAW_DECODER_NAME = "OMX.MTK.AUDIO.DECODER.RAW";
   private static final MediaCodecInfo PASSTHROUGH_DECODER_INFO =
-      MediaCodecInfo.newPassthroughInstance(GOOGLE_RAW_DECODER_NAME);
+      MediaCodecInfo.newPassthroughInstance("OMX.google.raw.decoder");
   private static final Pattern PROFILE_PATTERN = Pattern.compile("^\\D?(\\d+)$");
 
   private static final HashMap<CodecKey, List<MediaCodecInfo>> decoderInfosCache = new HashMap<>();
@@ -101,7 +99,7 @@ public final class MediaCodecUtil {
 
   /**
    * Returns information about a decoder suitable for audio passthrough.
-   *
+   **
    * @return A {@link MediaCodecInfo} describing the decoder, or null if no suitable decoder
    *     exists.
    */
@@ -157,7 +155,6 @@ public final class MediaCodecUtil {
             + ". Assuming: " + decoderInfos.get(0).name);
       }
     }
-    applyWorkarounds(decoderInfos);
     decoderInfos = Collections.unmodifiableList(decoderInfos);
     decoderInfosCache.put(key, decoderInfos);
     return decoderInfos;
@@ -233,10 +230,10 @@ public final class MediaCodecUtil {
                 if ((secureDecodersExplicit && key.secure == secure)
                     || (!secureDecodersExplicit && !key.secure)) {
                   decoderInfos.add(MediaCodecInfo.newInstance(codecName, mimeType, capabilities,
-                      forceDisableAdaptive, false));
+                      forceDisableAdaptive));
                 } else if (!secureDecodersExplicit && secure) {
                   decoderInfos.add(MediaCodecInfo.newInstance(codecName + ".secure", mimeType,
-                      capabilities, forceDisableAdaptive, true));
+                      capabilities, forceDisableAdaptive));
                   // It only makes sense to have one synthesized secure decoder, return immediately.
                   return decoderInfos;
                 }
@@ -288,11 +285,9 @@ public final class MediaCodecUtil {
       return false;
     }
 
-    // Work around https://github.com/google/ExoPlayer/issues/1528 and
-    // https://github.com/google/ExoPlayer/issues/3171
+    // Work around https://github.com/google/ExoPlayer/issues/1528
     if (Util.SDK_INT < 18 && "OMX.MTK.AUDIO.DECODER.AAC".equals(name)
-        && ("a70".equals(Util.DEVICE)
-            || ("Xiaomi".equals(Util.MANUFACTURER) && Util.DEVICE.startsWith("HM")))) {
+        && "a70".equals(Util.DEVICE)) {
       return false;
     }
 
@@ -325,22 +320,7 @@ public final class MediaCodecUtil {
       return false;
     }
 
-    // Work around https://github.com/google/ExoPlayer/issues/3249.
-    if (Util.SDK_INT < 24
-        && ("OMX.SEC.aac.dec".equals(name) || "OMX.Exynos.AAC.Decoder".equals(name))
-        && Util.MANUFACTURER.equals("samsung")
-        && (Util.DEVICE.startsWith("zeroflte") // Galaxy S6
-            || Util.DEVICE.startsWith("zerolte") // Galaxy S6 Edge
-            || Util.DEVICE.startsWith("zenlte") // Galaxy S6 Edge+
-            || Util.DEVICE.equals("SC-05G") // Galaxy S6
-            || Util.DEVICE.equals("marinelteatt") // Galaxy S6 Active
-            || Util.DEVICE.equals("404SC") // Galaxy S6 Edge
-            || Util.DEVICE.equals("SC-04G")
-            || Util.DEVICE.equals("SCV31"))) {
-      return false;
-    }
-
-    // Work around https://github.com/google/ExoPlayer/issues/548.
+    // Work around https://github.com/google/ExoPlayer/issues/548
     // VP8 decoder on Samsung Galaxy S3/S4/S4 Mini/Tab 3/Note 2 does not render video.
     if (Util.SDK_INT <= 19
         && "OMX.SEC.vp8.dec".equals(name) && "samsung".equals(Util.MANUFACTURER)
@@ -357,27 +337,6 @@ public final class MediaCodecUtil {
     }
 
     return true;
-  }
-
-  /**
-   * Modifies a list of {@link MediaCodecInfo}s to apply workarounds where we know better than the
-   * platform.
-   *
-   * @param decoderInfos The list to modify.
-   */
-  private static void applyWorkarounds(List<MediaCodecInfo> decoderInfos) {
-    if (Util.SDK_INT < 26 && decoderInfos.size() > 1
-        && MTK_RAW_DECODER_NAME.equals(decoderInfos.get(0).name)) {
-      // Prefer the Google raw decoder over the MediaTek one [Internal: b/62337687].
-      for (int i = 1; i < decoderInfos.size(); i++) {
-        MediaCodecInfo decoderInfo = decoderInfos.get(i);
-        if (GOOGLE_RAW_DECODER_NAME.equals(decoderInfo.name)) {
-          decoderInfos.remove(i);
-          decoderInfos.add(0, decoderInfo);
-          break;
-        }
-      }
-    }
   }
 
   /**

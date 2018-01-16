@@ -17,6 +17,8 @@ package com.google.android.exoplayer2.source.hls;
 
 import android.net.Uri;
 import android.os.SystemClock;
+
+import com.google.android.exoplayer2.AL.ALCmd;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.source.BehindLiveWindowException;
@@ -35,15 +37,17 @@ import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.util.TimestampAdjuster;
 import com.google.android.exoplayer2.util.UriUtil;
 import com.google.android.exoplayer2.util.Util;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Source of Hls (possibly adaptive) chunks.
  */
-/* package */ class HlsChunkSource {
+/* package */ class HlsChunkSource{
 
   /**
    * Chunk holder that allows the scheduling of retries.
@@ -92,12 +96,19 @@ import java.util.List;
   private byte[] scratchSpace;
   private IOException fatalError;
   private HlsUrl expectedPlaylistUrl;
-  private boolean independentSegments;
 
   private Uri encryptionKeyUri;
   private byte[] encryptionKey;
   private String encryptionIvString;
   private byte[] encryptionIv;
+
+  //AL
+  private static final int MOVE_STATE_FORWARD = 101;//前进
+  private static final int MOVE_STATE_BACK = 102;//后退
+
+  public static boolean isForward = true;
+
+  private int testNum = 1799;
 
   // Note: The track group in the selection is typically *not* equal to trackGroup. This is due to
   // the way in which HlsSampleStreamWrapper generates track groups. Use only index based methods
@@ -166,13 +177,6 @@ import java.util.List;
   }
 
   /**
-   * Returns the current track selection.
-   */
-  public TrackSelection getTrackSelection() {
-    return trackSelection;
-  }
-
-  /**
    * Resets the source.
    */
   public void reset() {
@@ -207,11 +211,10 @@ import java.util.List;
     int oldVariantIndex = previous == null ? C.INDEX_UNSET
         : trackGroup.indexOf(previous.trackFormat);
     expectedPlaylistUrl = null;
-    // Unless segments are known to be independent, switching variant will require downloading
-    // overlapping segments. Hence we use the start time of the previous chunk rather than its end
-    // time for this case.
-    long bufferedDurationUs = previous == null ? 0 : Math.max(0,
-        (independentSegments ? previous.endTimeUs : previous.startTimeUs) - playbackPositionUs);
+    // Use start time of the previous chunk rather than its end time because switching format will
+    // require downloading overlapping segments.
+    long bufferedDurationUs = previous == null ? 0
+        : Math.max(0, previous.startTimeUs - playbackPositionUs);
 
     // Select the variant.
     trackSelection.updateSelectedTrack(bufferedDurationUs);
@@ -226,14 +229,12 @@ import java.util.List;
       return;
     }
     HlsMediaPlaylist mediaPlaylist = playlistTracker.getPlaylistSnapshot(selectedUrl);
-    independentSegments = mediaPlaylist.hasIndependentSegmentsTag;
 
     // Select the chunk.
     int chunkMediaSequence;
     if (previous == null || switchingVariant) {
-      long targetPositionUs = previous == null ? playbackPositionUs
-          : independentSegments ? previous.endTimeUs : previous.startTimeUs;
-      if (!mediaPlaylist.hasEndTag && targetPositionUs >= mediaPlaylist.getEndTimeUs()) {
+      long targetPositionUs = previous == null ? playbackPositionUs : previous.startTimeUs;
+      if (!mediaPlaylist.hasEndTag && targetPositionUs > mediaPlaylist.getEndTimeUs()) {
         // If the playlist is too old to contain the chunk, we need to refresh it.
         chunkMediaSequence = mediaPlaylist.mediaSequence + mediaPlaylist.segments.size();
       } else {
@@ -302,8 +303,41 @@ import java.util.List;
     TimestampAdjuster timestampAdjuster = timestampAdjusterProvider.getAdjuster(
         discontinuitySequence);
 
+//    String str = segment.url.split("\\.")[0];
+//    str = str.replace("index","");
+//    ALCmd.CURRENT_CHUNK = Integer.parseInt(str);
+    Uri chunkUri = null;
+    if (ALCmd.CURRENT_MOVE_STATE == ALCmd.MOVE_STATE_FORWARD)
+    {
+      //暂时注释
+//      String str = segment.url.split("\\.")[0];
+//      str = str.replace("index","");
+//      ALCmd.CURRENT_CHUNK = Integer.parseInt(str);
+      //暂时注释
+      ALCmd.CURRENT_CHUNK++;
+//      chunkUri = UriUtil.resolveToUri(mediaPlaylist.baseUri, segment.url);
+    }
+    if (ALCmd.CURRENT_MOVE_STATE == ALCmd.MOVE_STATE_BACK){
+
+      ALCmd.CURRENT_CHUNK = ALCmd.CURRENT_CHUNK-1;
+      if(ALCmd.CURRENT_CHUNK == -1)
+      {
+        ALCmd.CURRENT_CHUNK = 0;
+      }
+    }
+    String changeStr = "index" + ALCmd.CURRENT_CHUNK + ".ts";
+    chunkUri = UriUtil.resolveToUri(mediaPlaylist.baseUri, changeStr);
+
+    if (chunkUri == null)
+    {
+      return;
+    }
+
+//    Thread.dumpStack(); //测试用
+
+//    Uri chunkUri = UriUtil.resolveToUri(mediaPlaylist.baseUri, segment.url);
     // Configure the data source and spec for the chunk.
-    Uri chunkUri = UriUtil.resolveToUri(mediaPlaylist.baseUri, segment.url);
+
     DataSpec dataSpec = new DataSpec(chunkUri, segment.byterangeOffset, segment.byterangeLength,
         null);
     out.chunk = new HlsMediaChunk(mediaDataSource, dataSpec, initDataSpec, selectedUrl,
@@ -368,7 +402,7 @@ import java.util.List;
 
   private void setEncryptionData(Uri keyUri, String iv, byte[] secretKey) {
     String trimmedIv;
-    if (Util.toLowerInvariant(iv).startsWith("0x")) {
+    if (iv.toLowerCase(Locale.getDefault()).startsWith("0x")) {
       trimmedIv = iv.substring(2);
     } else {
       trimmedIv = iv;

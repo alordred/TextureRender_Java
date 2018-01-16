@@ -51,10 +51,9 @@ import java.util.List;
       Assertions.checkArgument(MimeTypes.APPLICATION_CEA608.equals(channelMimeType)
           || MimeTypes.APPLICATION_CEA708.equals(channelMimeType),
           "Invalid closed caption mime type provided: " + channelMimeType);
-      String formatId = channelFormat.id != null ? channelFormat.id : idGenerator.getFormatId();
-      output.format(Format.createTextSampleFormat(formatId, channelMimeType, null, Format.NO_VALUE,
-          channelFormat.selectionFlags, channelFormat.language, channelFormat.accessibilityChannel,
-          null));
+      output.format(Format.createTextSampleFormat(idGenerator.getFormatId(), channelMimeType, null,
+          Format.NO_VALUE, channelFormat.selectionFlags, channelFormat.language,
+          channelFormat.accessibilityChannel, null));
       outputs[i] = output;
     }
   }

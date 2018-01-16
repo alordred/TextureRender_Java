@@ -667,15 +667,13 @@ import java.util.List;
       int runLength = 0;
       int clutIndex = 0;
       int peek = data.readBits(2);
-      if (peek != 0x00) {
+      if (!data.readBit()) {
         runLength = 1;
         clutIndex = peek;
       } else if (data.readBit()) {
         runLength = 3 + data.readBits(3);
         clutIndex = data.readBits(2);
-      } else if (data.readBit()) {
-        runLength = 1;
-      } else {
+      } else if (!data.readBit()) {
         switch (data.readBits(2)) {
           case 0x00:
             endOfPixelCodeString = true;

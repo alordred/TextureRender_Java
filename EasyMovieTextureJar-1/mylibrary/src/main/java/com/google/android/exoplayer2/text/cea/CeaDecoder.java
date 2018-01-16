@@ -24,7 +24,7 @@ import com.google.android.exoplayer2.text.SubtitleInputBuffer;
 import com.google.android.exoplayer2.text.SubtitleOutputBuffer;
 import com.google.android.exoplayer2.util.Assertions;
 import java.util.LinkedList;
-import java.util.PriorityQueue;
+import java.util.TreeSet;
 
 /**
  * Base class for subtitle parsers for CEA captions.
@@ -36,7 +36,7 @@ import java.util.PriorityQueue;
 
   private final LinkedList<SubtitleInputBuffer> availableInputBuffers;
   private final LinkedList<SubtitleOutputBuffer> availableOutputBuffers;
-  private final PriorityQueue<SubtitleInputBuffer> queuedInputBuffers;
+  private final TreeSet<SubtitleInputBuffer> queuedInputBuffers;
 
   private SubtitleInputBuffer dequeuedInputBuffer;
   private long playbackPositionUs;
@@ -50,7 +50,7 @@ import java.util.PriorityQueue;
     for (int i = 0; i < NUM_OUTPUT_BUFFERS; i++) {
       availableOutputBuffers.add(new CeaOutputBuffer(this));
     }
-    queuedInputBuffers = new PriorityQueue<>();
+    queuedInputBuffers = new TreeSet<>();
   }
 
   @Override
@@ -73,6 +73,7 @@ import java.util.PriorityQueue;
 
   @Override
   public void queueInputBuffer(SubtitleInputBuffer inputBuffer) throws SubtitleDecoderException {
+    Assertions.checkArgument(inputBuffer != null);
     Assertions.checkArgument(inputBuffer == dequeuedInputBuffer);
     if (inputBuffer.isDecodeOnly()) {
       // We can drop this buffer early (i.e. before it would be decoded) as the CEA formats allow
@@ -89,12 +90,13 @@ import java.util.PriorityQueue;
     if (availableOutputBuffers.isEmpty()) {
       return null;
     }
+
     // iterate through all available input buffers whose timestamps are less than or equal
     // to the current playback position; processing input buffers for future content should
     // be deferred until they would be applicable
     while (!queuedInputBuffers.isEmpty()
-        && queuedInputBuffers.peek().timeUs <= playbackPositionUs) {
-      SubtitleInputBuffer inputBuffer = queuedInputBuffers.poll();
+        && queuedInputBuffers.first().timeUs <= playbackPositionUs) {
+      SubtitleInputBuffer inputBuffer = queuedInputBuffers.pollFirst();
 
       // If the input buffer indicates we've reached the end of the stream, we can
       // return immediately with an output buffer propagating that
@@ -140,7 +142,7 @@ import java.util.PriorityQueue;
   public void flush() {
     playbackPositionUs = 0;
     while (!queuedInputBuffers.isEmpty()) {
-      releaseInputBuffer(queuedInputBuffers.poll());
+      releaseInputBuffer(queuedInputBuffers.pollFirst());
     }
     if (dequeuedInputBuffer != null) {
       releaseInputBuffer(dequeuedInputBuffer);

@@ -767,8 +767,9 @@ public class EasyMovieTexture implements MediaPlayer.OnPreparedListener, MediaPl
 
 	public void setDirection(long direction)
 	{
-		System.out.println("setDirection java : " + String.valueOf(direction));
-		m_Exoplayer.SeekTo(direction);
+//		System.out.println("setDirection java : " + String.valueOf(direction));
+//		m_Exoplayer.SeekTo(direction);
+		m_Exoplayer.ChangedMoveState(direction);
 	}
 
     //Download

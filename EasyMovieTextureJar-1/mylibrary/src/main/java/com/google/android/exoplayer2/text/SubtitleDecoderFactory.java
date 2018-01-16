@@ -19,7 +19,6 @@ import com.google.android.exoplayer2.Format;
 import com.google.android.exoplayer2.text.cea.Cea608Decoder;
 import com.google.android.exoplayer2.text.cea.Cea708Decoder;
 import com.google.android.exoplayer2.text.dvb.DvbDecoder;
-import com.google.android.exoplayer2.text.ssa.SsaDecoder;
 import com.google.android.exoplayer2.text.subrip.SubripDecoder;
 import com.google.android.exoplayer2.text.ttml.TtmlDecoder;
 import com.google.android.exoplayer2.text.tx3g.Tx3gDecoder;
@@ -59,7 +58,6 @@ public interface SubtitleDecoderFactory {
    * <li>WebVTT (MP4) ({@link Mp4WebvttDecoder})</li>
    * <li>TTML ({@link TtmlDecoder})</li>
    * <li>SubRip ({@link SubripDecoder})</li>
-   * <li>SSA/ASS ({@link SsaDecoder})</li>
    * <li>TX3G ({@link Tx3gDecoder})</li>
    * <li>Cea608 ({@link Cea608Decoder})</li>
    * <li>Cea708 ({@link Cea708Decoder})</li>
@@ -72,7 +70,6 @@ public interface SubtitleDecoderFactory {
     public boolean supportsFormat(Format format) {
       String mimeType = format.sampleMimeType;
       return MimeTypes.TEXT_VTT.equals(mimeType)
-          || MimeTypes.TEXT_SSA.equals(mimeType)
           || MimeTypes.APPLICATION_TTML.equals(mimeType)
           || MimeTypes.APPLICATION_MP4VTT.equals(mimeType)
           || MimeTypes.APPLICATION_SUBRIP.equals(mimeType)
@@ -88,8 +85,6 @@ public interface SubtitleDecoderFactory {
       switch (format.sampleMimeType) {
         case MimeTypes.TEXT_VTT:
           return new WebvttDecoder();
-        case MimeTypes.TEXT_SSA:
-          return new SsaDecoder(format.initializationData);
         case MimeTypes.APPLICATION_MP4VTT:
           return new Mp4WebvttDecoder();
         case MimeTypes.APPLICATION_TTML:

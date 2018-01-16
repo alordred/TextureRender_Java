@@ -41,8 +41,7 @@ import java.io.IOException;
     OggSeeker oggSeeker;
   }
 
-  private final OggPacket oggPacket;
-
+  private OggPacket oggPacket;
   private TrackOutput trackOutput;
   private ExtractorOutput extractorOutput;
   private OggSeeker oggSeeker;
@@ -56,13 +55,11 @@ import java.io.IOException;
   private boolean seekMapSet;
   private boolean formatSet;
 
-  public StreamReader() {
-    oggPacket = new OggPacket();
-  }
-
   void init(ExtractorOutput output, TrackOutput trackOutput) {
     this.extractorOutput = output;
     this.trackOutput = trackOutput;
+    this.oggPacket = new OggPacket();
+
     reset(true);
   }
 

@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.view.Surface;
 import android.widget.LinearLayout;
 
+import com.google.android.exoplayer2.AL.ALCmd;
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.MediaSource;
@@ -46,28 +47,42 @@ public class MyExoplayer{
     public void initializePlayer(Surface m_Surface) {
         System.out.println("initializePlayer");
         if (player == null) {
-            System.out.println("player == nul");
+            ALCmd.CURRENT_MOVE_STATE = ALCmd.MOVE_STATE_FORWARD;
+//            System.out.println("player == nul");
             eventCollector.signal(new Event(Event.EventType.PLAYBACK_INIT));
-            System.out.println("player == nul 1");
+//            System.out.println("player == nul 1");
             player = exoFactory.buildExoPlayer();
-            System.out.println("player == nul 2");
+//            System.out.println("player == nul 2");
 //            player.addListener(this);
             player.setPlayWhenReady(true);
             boolean haveResumePosition = resumeWindow != C.INDEX_UNSET;
             if (haveResumePosition) {
-                System.out.println("player.seekTo(resumeWindow, resumePosition);");
+//                System.out.println("player.seekTo(resumeWindow, resumePosition);");
                 player.seekTo(resumeWindow, resumePosition);
             }
-            Uri trackUri = Uri.parse("http://10.11.12.100:8080/vk_key.mp4");
-            System.out.println("player == nul 3");
+            Uri trackUri = Uri.parse("http://10.213.122.139:8080/hls/vk_20/index.m3u8");
+//            System.out.println("player == nul 3");
             int type = Util.inferContentType(trackUri);
-            System.out.println("player == nul 4");
+//            System.out.println("player == nul 4");
             MediaSource mediaSource = exoFactory.buildMediaSource(exoFactory.buildDataSourceFactory(true), trackUri, "");
-            System.out.println("player == nul 5");
+//            System.out.println("player == nul 5");
             player.setVideoSurface(m_Surface);
-            System.out.println("player == nul 6");
+//            System.out.println("player == nul 6");
             player.prepare(mediaSource, !haveResumePosition, false);
-            player.setPlayWhenReady(false);
+            //暂时注释
+//            player.setPlayWhenReady(false);
+        }
+    }
+
+    public void ChangedMoveState(long state){
+        if(state == 1)
+        {
+            //前进
+            ALCmd.CURRENT_MOVE_STATE = ALCmd.MOVE_STATE_FORWARD;
+        }else if(state == 2)
+        {
+            //后退
+            ALCmd.CURRENT_MOVE_STATE = ALCmd.MOVE_STATE_BACK;
         }
     }
 
@@ -99,13 +114,6 @@ public class MyExoplayer{
             player.seekTo(30000);
             player.setPlayWhenReady(true);
         }
-//        if (state == 5)
-//        {
-//            if(player.getCurrentPosition() % 10000 == 0)
-//            {
-//                player.setPlayWhenReady(false);
-//            }
-//        }
     }
 
     public void Stop()

@@ -21,6 +21,8 @@ import android.media.MediaCrypto;
 import android.media.MediaFormat;
 import android.media.audiofx.Virtualizer;
 import android.os.Handler;
+import android.util.Log;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.Format;
@@ -331,6 +333,12 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
 
   @Override
   public boolean isReady() {
+    int DebugTest = 0;
+    if(DebugTest == 0)
+    {
+      return true;
+    }
+    Log.d("AudioRendererReady?",String.valueOf(audioTrack.hasPendingData() || super.isReady()));
     return audioTrack.hasPendingData() || super.isReady();
   }
 
@@ -399,9 +407,9 @@ public class MediaCodecAudioRenderer extends MediaCodecRenderer implements Media
       case C.MSG_SET_VOLUME:
         audioTrack.setVolume((Float) message);
         break;
-      case C.MSG_SET_AUDIO_ATTRIBUTES:
-        AudioAttributes audioAttributes = (AudioAttributes) message;
-        audioTrack.setAudioAttributes(audioAttributes);
+      case C.MSG_SET_STREAM_TYPE:
+        @C.StreamType int streamType = (Integer) message;
+        audioTrack.setStreamType(streamType);
         break;
       default:
         super.handleMessage(messageType, message);
