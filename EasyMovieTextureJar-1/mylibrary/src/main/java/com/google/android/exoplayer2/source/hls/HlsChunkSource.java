@@ -327,7 +327,18 @@ import java.util.Locale;
     }
     String changeStr = "index" + ALCmd.CURRENT_CHUNK + ".ts";
     chunkUri = UriUtil.resolveToUri(mediaPlaylist.baseUri, changeStr);
-
+    if(ALCmd.CURRENT_MOVE_STATE == ALCmd.MOVE_STATE_LOOK_DOWN)
+    {
+      ALCmd.CURRENT_CHUNK++;
+      mediaPlaylist.baseUri = ALCmd.MOVE_STATE_LOOK_DOWN_URL;
+      chunkUri = UriUtil.resolveToUri(mediaPlaylist.baseUri , changeStr);
+    }
+    if(ALCmd.CURRENT_MOVE_STATE == ALCmd.MOVE_STATE_LOOK_UP)
+    {
+      ALCmd.CURRENT_CHUNK++;
+      mediaPlaylist.baseUri = ALCmd.MOVE_STATE_LOOK_UP_URL;
+      chunkUri = UriUtil.resolveToUri(mediaPlaylist.baseUri , changeStr);
+    }
     if (chunkUri == null)
     {
       return;

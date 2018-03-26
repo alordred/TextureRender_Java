@@ -333,8 +333,8 @@ public class EasyMovieTexture implements MediaPlayer.OnPreparedListener, MediaPl
 	
 	
 	synchronized public void onFrameAvailable(SurfaceTexture surface) {
-		System.out.println("onFrameAvailable m_bUpdate = true");
-		System.out.println("m_mediaCodec.play();");
+//		System.out.println("onFrameAvailable m_bUpdate = true");
+//		System.out.println("m_mediaCodec.play();");
 		m_bUpdate = true;
 	}
 

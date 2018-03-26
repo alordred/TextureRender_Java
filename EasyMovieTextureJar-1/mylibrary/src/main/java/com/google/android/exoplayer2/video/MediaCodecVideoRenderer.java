@@ -536,7 +536,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
 
   @TargetApi(21)
   private void renderOutputBufferV21(MediaCodec codec, int bufferIndex, long releaseTimeNs) {
-    Log.d("renderOutputBufferV21","renderOutputBufferV21");
+//    Log.d("renderOutputBufferV21","renderOutputBufferV21");
 //    Log.d("bufferIndex",String.valueOf(bufferIndex));
 //    Log.d("releaseTimeNs",String.valueOf(releaseTimeNs));
     maybeNotifyVideoSizeChanged();

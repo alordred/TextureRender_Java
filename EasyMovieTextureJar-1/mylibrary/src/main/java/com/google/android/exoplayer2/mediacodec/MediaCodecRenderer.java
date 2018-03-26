@@ -708,7 +708,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
       } else {
 //        Log.d("inputIndex:",String.valueOf(inputIndex));
 //        Log.d("buffer.data.limit():",String.valueOf(buffer.data.limit()));
-        Log.d("presentationTimeUs:",String.valueOf(presentationTimeUs));
+//        Log.d("presentationTimeUs:",String.valueOf(presentationTimeUs));
         codec.queueInputBuffer(inputIndex, 0, buffer.data.limit(), testNumPre, 0);
         testNumPre += 23219;
       }

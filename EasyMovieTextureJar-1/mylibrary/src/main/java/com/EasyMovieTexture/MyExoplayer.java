@@ -60,7 +60,17 @@ public class MyExoplayer{
 //                System.out.println("player.seekTo(resumeWindow, resumePosition);");
                 player.seekTo(resumeWindow, resumePosition);
             }
-            Uri trackUri = Uri.parse("http://10.213.122.139:8080/hls/vk_20/index.m3u8");
+            Uri trackUri = Uri.parse("http://203.91.121.132:8080/hls/vr30m/index.m3u8");//全一样
+            ALCmd.MOVE_STATE_LOOK_DOWN_URL = "http://203.91.121.132:8080/hls/vr30m/index.m3u8";
+            ALCmd.MOVE_STATE_LOOK_UP_URL = "http://203.91.121.132:8080/hls/vr30m/index.m3u8";
+
+//            Uri trackUri = Uri.parse("http://203.91.121.132:8080/hls/vr30m/index.m3u8");//CDN 地址
+//            ALCmd.MOVE_STATE_LOOK_DOWN_URL = "http://203.91.121.132:8080/hls/vr30UD/index.m3u8";
+//            ALCmd.MOVE_STATE_LOOK_UP_URL = "http://203.91.121.132:8080/hls/vr30DU/index.m3u8";
+            //10.213.122.139
+//            Uri trackUri = Uri.parse("http://10.213.122.139:8080/hls/vr30m/index.m3u8");//本地 Mac 地址
+//            ALCmd.MOVE_STATE_LOOK_DOWN_URL = "http://10.213.122.139:8080/hls/vr30UD/index.m3u8";
+//            ALCmd.MOVE_STATE_LOOK_UP_URL = "http://10.213.122.139:8080/hls/vr30DU/index.m3u8";
 //            System.out.println("player == nul 3");
             int type = Util.inferContentType(trackUri);
 //            System.out.println("player == nul 4");
@@ -83,6 +93,20 @@ public class MyExoplayer{
         {
             //后退
             ALCmd.CURRENT_MOVE_STATE = ALCmd.MOVE_STATE_BACK;
+        }
+        //模式原因注释,演示华为暂时注释
+        if(state != 0)
+        {
+            return;
+        }
+
+        if(state == 6)
+        {
+            ALCmd.CURRENT_MOVE_STATE = ALCmd.MOVE_STATE_LOOK_UP;
+        }
+        if(state == 7)
+        {
+            ALCmd.CURRENT_MOVE_STATE = ALCmd.MOVE_STATE_LOOK_DOWN;
         }
     }
 
