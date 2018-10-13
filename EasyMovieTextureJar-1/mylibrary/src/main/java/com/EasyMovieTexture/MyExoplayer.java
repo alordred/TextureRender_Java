@@ -60,9 +60,9 @@ public class MyExoplayer{
 //                System.out.println("player.seekTo(resumeWindow, resumePosition);");
                 player.seekTo(resumeWindow, resumePosition);
             }
-            Uri trackUri = Uri.parse("http://203.91.121.132:8080/hls/vr30m/index.m3u8");//全一样
-            ALCmd.MOVE_STATE_LOOK_DOWN_URL = "http://203.91.121.132:8080/hls/vr30m/index.m3u8";
-            ALCmd.MOVE_STATE_LOOK_UP_URL = "http://203.91.121.132:8080/hls/vr30m/index.m3u8";
+            Uri trackUri = Uri.parse("http://10.213.122.118:8080/video/hls/furion/index.m3u8");//全一样
+            ALCmd.MOVE_STATE_LOOK_DOWN_URL = "http://10.213.122.118:8080/video/hls/furion/index.m3u8";
+            ALCmd.MOVE_STATE_LOOK_UP_URL = "http://10.213.122.118:8080/video/hls/furion/index.m3u8";
 
 //            Uri trackUri = Uri.parse("http://203.91.121.132:8080/hls/vr30m/index.m3u8");//CDN 地址
 //            ALCmd.MOVE_STATE_LOOK_DOWN_URL = "http://203.91.121.132:8080/hls/vr30UD/index.m3u8";

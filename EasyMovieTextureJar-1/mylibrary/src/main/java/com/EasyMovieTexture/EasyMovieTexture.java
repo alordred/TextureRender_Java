@@ -19,8 +19,8 @@ import android.opengl.GLES20;
 import android.util.Log;
 import android.view.Surface;
 
-import com.android.vending.expansion.zipfile.ZipResourceFile;
-import com.android.vending.expansion.zipfile.ZipResourceFile.ZipEntryRO;
+import com.google.android.vending.expansion.zipfile.ZipResourceFile;
+import com.google.android.vending.expansion.zipfile.ZipResourceFile.ZipEntryRO;
 import com.google.android.exoplayer2.ExoPlayer;
 
 import java.io.File;
